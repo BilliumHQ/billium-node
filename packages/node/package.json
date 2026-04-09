@@ -1,0 +1,65 @@
+{
+  "name": "@billium/node",
+  "version": "1.0.0",
+  "description": "Official Billium Node.js SDK — non-custodial crypto payments, invoices, and webhooks.",
+  "keywords": [
+    "billium",
+    "webhook",
+    "crypto",
+    "payments",
+    "invoice",
+    "bitcoin",
+    "ethereum",
+    "non-custodial",
+    "stablecoins",
+    "sdk"
+  ],
+  "license": "MIT",
+  "author": "Billium <hello@billium.to>",
+  "homepage": "https://billium.to",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BilliumHQ/billium-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BilliumHQ/billium-node/issues"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0"
+  }
+}

@@ -1,0 +1,109 @@
+name: Release
+
+# Triggered by pushing a tag like `v1.0.0`. The tag MUST match the version in
+# packages/node/package.json — the workflow checks this and refuses to publish
+# on a mismatch (catches the most common release mistake: tagging without
+# bumping the package, or vice versa).
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Required to mint a short-lived OIDC token used for npm provenance.
+      # Without this, `npm publish` falls back to plain auth and the package
+      # does not get the verified-build badge on npmjs.com.
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: npm
+          # registry-url is what makes npm publish use NODE_AUTH_TOKEN below.
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # Reject the release if the git tag and the package.json version
+      # disagree. The most common release mistake is tagging `v1.0.1` while
+      # package.json still says `1.0.0` (or vice versa); without this guard,
+      # the publish silently uses package.json and the tag becomes a lie.
+      - name: Verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          PKG_VERSION=$(node -p "require('./packages/node/package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag v$TAG_VERSION does not match packages/node/package.json version $PKG_VERSION"
+            echo "Either re-tag, or bump package.json (and src/version.ts) and push a new tag."
+            exit 1
+          fi
+          echo "Tag and package.json agree on $PKG_VERSION"
+
+      - name: Publish to npm
+        working-directory: packages/node
+        run: npm publish
+        env:
+          # Two ways to authenticate, in order of preference:
+          #
+          # 1. **Trusted publishing** (recommended once the package exists on
+          #    npmjs.com): configure on https://www.npmjs.com/package/@billium/node
+          #    → Settings → Trusted Publishers → add this repo + workflow.
+          #    Once enabled, NODE_AUTH_TOKEN is no longer needed and can be
+          #    removed from secrets entirely.
+          #
+          # 2. **Token-based** (required for the very first publish, since
+          #    trusted publishing can only be configured on an existing
+          #    package): create a granular access token on npmjs.com with
+          #    publish access to @billium/node, store it as the NPM_TOKEN
+          #    secret in this repo's settings, and the line below picks it up.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Extract just the section for this version out of CHANGELOG.md so the
+      # GitHub release notes mirror what's already documented in the repo,
+      # without us having to maintain release notes in two places.
+      #
+      # Looks for `## [X.Y.Z]` and copies everything until the next `## ` heading.
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          awk -v ver="$TAG_VERSION" '
+            $0 ~ "^## \\["ver"\\]" { in_section=1; next }
+            in_section && /^## / { exit }
+            in_section { print }
+          ' packages/node/CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::No CHANGELOG entry found for $TAG_VERSION; release notes will be empty."
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          # If the CHANGELOG section is missing, fall back to a default body
+          # rather than failing the whole release — the npm publish has
+          # already succeeded by this point and we don't want a missing
+          # release note to look like a publish failure.
+          generate_release_notes: false
+        continue-on-error: true

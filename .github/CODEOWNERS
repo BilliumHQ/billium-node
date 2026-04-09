@@ -1,0 +1,23 @@
+# GitHub Code Owners
+
+# https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+#
+
+# These users are automatically requested for review on every pull request
+
+# that touches files matching the pattern. Combined with branch protection
+
+# (Settings → Branches → main → "Require review from Code Owners"), this
+
+# enforces that nothing lands on main without an owner's approval.
+
+#
+
+*                                @Piximiti
+
+# Critical surfaces — be extra careful with reviews here.
+
+/packages/node/src/webhooks.ts @Piximiti
+/packages/node/src/http.ts @Piximiti
+/.github/workflows/ @Piximiti

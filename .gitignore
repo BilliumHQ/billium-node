@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test artifacts
+coverage/
+.vitest-cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local environment overrides
+.env
+.env.local
+.env.*.local
+
+# npm pack output (kept around when running locally)
+*.tgz
+
+# Private developer notes — design drafts, internal roadmap, launch checklists,
+# anything that's a thinking-out-loud document rather than published material.
+# Anything dropped into notes/ stays local and never reaches the public repo.
+/notes/

@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a new feature or improvement for @billium/node.
+title: "[Feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. The best feature requests describe the **problem** first and the proposed solution second — sometimes there's a simpler answer than the one you came in with.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do? What's not working today?
+      placeholder: |
+        I'm running the SDK from a Cloudflare Worker and I want to verify
+        webhooks, but `verify()` requires a Buffer, which Workers don't have.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed solution
+      description: How do you imagine this working? Code snippets welcome — we're more likely to act on a concrete shape than an abstract idea.
+      render: typescript
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you try? What workarounds exist today?
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: How blocking is this for you?
+      options:
+        - Nice to have
+        - Inconvenient — I have a workaround
+        - Blocking — I can't ship without this
+    validations:
+      required: true
