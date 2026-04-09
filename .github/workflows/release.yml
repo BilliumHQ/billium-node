@@ -61,23 +61,22 @@ jobs:
           echo "Tag and package.json agree on $PKG_VERSION"
 
       - name: Publish to npm
+        # Authentication happens via npm Trusted Publishing: the `id-token:
+        # write` permission at the top of this job lets npm exchange a
+        # GitHub OIDC token for a short-lived publish credential, scoped to
+        # exactly this workflow + this repo + this package. There is no
+        # long-lived NPM_TOKEN involved — if it ever leaked, there would be
+        # nothing to leak.
+        #
+        # The trusted publisher binding is configured at:
+        #   https://www.npmjs.com/package/@billium/node/access
+        #   → Trusted Publishers → BilliumHQ/billium-node + .github/workflows/release.yml
+        #
+        # Provenance attestation is generated automatically from the same
+        # OIDC context (visible on the package page as a "Built and signed
+        # on GitHub Actions" badge).
         working-directory: packages/node
         run: npm publish
-        env:
-          # Two ways to authenticate, in order of preference:
-          #
-          # 1. **Trusted publishing** (recommended once the package exists on
-          #    npmjs.com): configure on https://www.npmjs.com/package/@billium/node
-          #    → Settings → Trusted Publishers → add this repo + workflow.
-          #    Once enabled, NODE_AUTH_TOKEN is no longer needed and can be
-          #    removed from secrets entirely.
-          #
-          # 2. **Token-based** (required for the very first publish, since
-          #    trusted publishing can only be configured on an existing
-          #    package): create a granular access token on npmjs.com with
-          #    publish access to @billium/node, store it as the NPM_TOKEN
-          #    secret in this repo's settings, and the line below picks it up.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Extract just the section for this version out of CHANGELOG.md so the
       # GitHub release notes mirror what's already documented in the repo,
