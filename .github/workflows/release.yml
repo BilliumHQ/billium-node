@@ -30,8 +30,17 @@ jobs:
         with:
           node-version: '20.x'
           cache: npm
-          # registry-url is what makes npm publish use NODE_AUTH_TOKEN below.
+          # Writes an .npmrc pointing at the public registry so `npm publish`
+          # targets it. Auth is via OIDC Trusted Publishing (see publish step),
+          # not a token — there is no NODE_AUTH_TOKEN.
           registry-url: 'https://registry.npmjs.org'
+
+      # npm Trusted Publishing (tokenless OIDC) requires npm >= 11.5.1. Node
+      # 20.x bundles npm 10.x, which has no OIDC token exchange and falls back
+      # to anonymous auth — that is why the first release after NPM_TOKEN was
+      # dropped (v1.0.1) failed with a 404 on PUT. Upgrade npm before publish.
+      - name: Upgrade npm for Trusted Publishing
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
