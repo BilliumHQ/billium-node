@@ -42,11 +42,11 @@ describe('HttpClient', () => {
       const fetch = mockFetch(200, { id: 'inv_1' });
       vi.stubGlobal('fetch', fetch);
 
-      const result = await client.get<{ id: string }>('/api/v1/invoices');
+      const result = await client.get<{ id: string }>('/v1/invoices');
 
       expect(fetch).toHaveBeenCalledOnce();
       const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toContain('/api/v1/invoices');
+      expect(url).toContain('/v1/invoices');
       expect((init.headers as Record<string, string>)['x-api-key']).toBe(API_KEY);
       expect(result).toEqual({ id: 'inv_1' });
     });
@@ -55,7 +55,7 @@ describe('HttpClient', () => {
       const fetch = mockFetch(200, {});
       vi.stubGlobal('fetch', fetch);
 
-      await client.get('/api/v1/invoices');
+      await client.get('/v1/invoices');
 
       const [, init] = fetch.mock.calls[0] as [string, RequestInit];
       const ua = (init.headers as Record<string, string>)['User-Agent'];
@@ -68,7 +68,7 @@ describe('HttpClient', () => {
       const fetch = mockFetch(200, { data: [] });
       vi.stubGlobal('fetch', fetch);
 
-      await client.get('/api/v1/invoices', { page: 2, limit: 20 });
+      await client.get('/v1/invoices', { page: 2, limit: 20 });
 
       const [url] = fetch.mock.calls[0] as [string];
       expect(url).toContain('page=2');
@@ -79,7 +79,7 @@ describe('HttpClient', () => {
       const fetch = mockFetch(200, {});
       vi.stubGlobal('fetch', fetch);
 
-      await client.get('/api/v1/invoices', { page: 1, search: undefined });
+      await client.get('/v1/invoices', { page: 1, search: undefined });
 
       const [url] = fetch.mock.calls[0] as [string];
       expect(url).not.toContain('search');
@@ -94,7 +94,7 @@ describe('HttpClient', () => {
       const fetch = mockFetch(201, { id: 'inv_2' });
       vi.stubGlobal('fetch', fetch);
 
-      await client.post('/api/v1/invoices', { name: 'Test', rawAmount: 50 });
+      await client.post('/v1/invoices', { name: 'Test', rawAmount: 50 });
 
       const [, init] = fetch.mock.calls[0] as [string, RequestInit];
       expect(init.method).toBe('POST');
@@ -106,7 +106,7 @@ describe('HttpClient', () => {
       const fetch = mockFetch(200, {});
       vi.stubGlobal('fetch', fetch);
 
-      await client.post('/api/v1/invoices/inv_1/cancel');
+      await client.post('/v1/invoices/inv_1/cancel');
 
       const [, init] = fetch.mock.calls[0] as [string, RequestInit];
       expect(init.body).toBeUndefined();
@@ -120,7 +120,7 @@ describe('HttpClient', () => {
       const fetch = mockFetch(200, { id: 'inv_3' });
       vi.stubGlobal('fetch', fetch);
 
-      await client.put('/api/v1/invoices/inv_3', { status: 'CANCELLED' });
+      await client.put('/v1/invoices/inv_3', { status: 'CANCELLED' });
 
       const [, init] = fetch.mock.calls[0] as [string, RequestInit];
       expect(init.method).toBe('PUT');
@@ -134,10 +134,10 @@ describe('HttpClient', () => {
       const fetch = mockFetch(404, { message: 'Invoice not found', statusCode: 404 });
       vi.stubGlobal('fetch', fetch);
 
-      await expect(client.get('/api/v1/invoices/inv_nope')).rejects.toThrow(BilliumApiError);
+      await expect(client.get('/v1/invoices/inv_nope')).rejects.toThrow(BilliumApiError);
 
       try {
-        await client.get('/api/v1/invoices/inv_nope');
+        await client.get('/v1/invoices/inv_nope');
       } catch (err) {
         expect(err).toBeInstanceOf(BilliumApiError);
         expect((err as BilliumApiError).status).toBe(404);
@@ -149,7 +149,7 @@ describe('HttpClient', () => {
       const fetch = mockFetch(401, { message: 'Invalid API Key' });
       vi.stubGlobal('fetch', fetch);
 
-      await expect(client.get('/api/v1/invoices')).rejects.toThrow(BilliumApiError);
+      await expect(client.get('/v1/invoices')).rejects.toThrow(BilliumApiError);
     });
 
     it('throws BilliumApiError on 500 with fallback message', async () => {
@@ -157,7 +157,7 @@ describe('HttpClient', () => {
       vi.stubGlobal('fetch', fetch);
 
       try {
-        await client.get('/api/v1/invoices');
+        await client.get('/v1/invoices');
       } catch (err) {
         expect(err).toBeInstanceOf(BilliumApiError);
         expect((err as BilliumApiError).status).toBe(500);
@@ -170,7 +170,7 @@ describe('HttpClient', () => {
       vi.stubGlobal('fetch', fetch);
 
       try {
-        await client.get('/api/v1/invoices');
+        await client.get('/v1/invoices');
       } catch (err) {
         expect(err).toBeInstanceOf(BilliumApiError);
         expect((err as BilliumApiError).code).toBe('FORBIDDEN');
@@ -190,10 +190,10 @@ describe('HttpClient', () => {
         API_KEY,
         { maxRetries: 0 },
       );
-      await clientWithSlash.get('/api/v1/invoices');
+      await clientWithSlash.get('/v1/invoices');
 
       const [url] = fetch.mock.calls[0] as [string];
-      expect(url).toBe('https://api.billium.to/api/v1/invoices');
+      expect(url).toBe('https://api.billium.to/v1/invoices');
     });
   });
 
@@ -259,7 +259,7 @@ describe('HttpClient', () => {
         baseDelayMs: 100,
       });
 
-      const promise = retryClient.get<{ id: string }>('/api/v1/invoices/inv_x');
+      const promise = retryClient.get<{ id: string }>('/v1/invoices/inv_x');
       await vi.runAllTimersAsync();
       const result = await promise;
 
@@ -280,7 +280,7 @@ describe('HttpClient', () => {
         baseDelayMs: 100,
       });
 
-      const promise = retryClient.get('/api/v1/invoices/inv_x');
+      const promise = retryClient.get('/v1/invoices/inv_x');
       const expectation = expect(promise).rejects.toThrow(BilliumApiError);
       await vi.runAllTimersAsync();
       await expectation;
@@ -299,7 +299,7 @@ describe('HttpClient', () => {
         baseDelayMs: 100,
       });
 
-      await expect(retryClient.get('/api/v1/invoices/inv_x')).rejects.toThrow(
+      await expect(retryClient.get('/v1/invoices/inv_x')).rejects.toThrow(
         BilliumApiError,
       );
 
@@ -319,7 +319,7 @@ describe('HttpClient', () => {
         baseDelayMs: 100,
       });
 
-      const promise = retryClient.get<{ id: string }>('/api/v1/invoices/inv_x');
+      const promise = retryClient.get<{ id: string }>('/v1/invoices/inv_x');
       await vi.runAllTimersAsync();
       const result = await promise;
 
@@ -343,7 +343,7 @@ describe('HttpClient', () => {
         baseDelayMs: 100,
       });
 
-      const promise = retryClient.get<{ ok: boolean }>('/api/v1/invoices');
+      const promise = retryClient.get<{ ok: boolean }>('/v1/invoices');
 
       // Advance just under the Retry-After hint — fetch should not have
       // been called a second time yet.
@@ -370,7 +370,7 @@ describe('HttpClient', () => {
       });
 
       await expect(
-        retryClient.post('/api/v1/invoices', { name: 'x', rawAmount: 1 }),
+        retryClient.post('/v1/invoices', { name: 'x', rawAmount: 1 }),
       ).rejects.toThrow(BilliumApiError);
 
       // Critical safety guarantee: no retries on POST without idempotency,
@@ -392,7 +392,7 @@ describe('HttpClient', () => {
       });
 
       const promise = retryClient.post<{ id: string }>(
-        '/api/v1/invoices',
+        '/v1/invoices',
         { name: 'x', rawAmount: 1 },
         { headers: { 'Idempotency-Key': 'order-1' } },
       );
@@ -423,7 +423,7 @@ describe('HttpClient', () => {
       });
 
       const promise = retryClient.post<{ id: string }>(
-        '/api/v1/invoices',
+        '/v1/invoices',
         {},
         { headers: { 'idempotency-key': 'lowercase-ok' } },
       );
@@ -443,7 +443,7 @@ describe('HttpClient', () => {
         maxRetries: 0,
       });
 
-      await expect(noRetryClient.get('/api/v1/invoices')).rejects.toThrow(
+      await expect(noRetryClient.get('/v1/invoices')).rejects.toThrow(
         BilliumApiError,
       );
       expect(fetch).toHaveBeenCalledTimes(1);

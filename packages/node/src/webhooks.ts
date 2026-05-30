@@ -100,7 +100,7 @@ export class WebhooksClient {
     merchantId?: string,
   ) {
     this.basePath = merchantId
-      ? `/api/v1/merchants/merchant/${merchantId}/webhooks`
+      ? `/v1/merchants/merchant/${merchantId}/webhooks`
       : undefined;
   }
 

@@ -2,6 +2,14 @@
 
 All notable changes to `@billium/node` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1]
+
+### Changed
+
+- **API base path moved from `/api/v1` to `/v1`.** Billium now serves its API on the dedicated `api.billium.to` subdomain, so the `/api` segment was redundant. The invoice and webhook resource paths were updated accordingly. This is an internal change — the public SDK surface (method names, options, response shapes) and the `baseUrl` default (`https://api.billium.to`) are unchanged.
+
+  **Compatibility:** this version targets the Billium backend that serves `/v1`. If you self-host an older backend that still serves `/api/v1`, stay on `1.0.0`.
+
 ## [1.0.0]
 
 Initial public release. The API surface is covered by the SemVer guarantee from this point on — breaking changes will only ship in major releases.

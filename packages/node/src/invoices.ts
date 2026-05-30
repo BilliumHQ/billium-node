@@ -197,7 +197,7 @@ export class InvoicesClient {
     private readonly http: HttpClient,
     merchantId: string,
   ) {
-    this.basePath = `/api/v1/merchants/merchant/${merchantId}/invoices`;
+    this.basePath = `/v1/merchants/merchant/${merchantId}/invoices`;
   }
 
   /**
