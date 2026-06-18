@@ -55,17 +55,55 @@ Add to your MCP config (`claude_desktop_config.json`, or Cursor's `mcp.json`):
 
 ## Tools
 
+23 tools across invoices, webhooks, customers, products, and wallets.
+
+**Invoices**
+
 | Tool | Description |
 | --- | --- |
 | `create_invoice` | Create a crypto payment invoice (auto idempotency key) |
 | `get_invoice` | Fetch an invoice by ID with status, payments, and timeline |
 | `list_invoices` | List invoices with pagination and search |
 | `cancel_invoice` | Cancel an unpaid invoice |
+
+**Webhooks**
+
+| Tool | Description |
+| --- | --- |
 | `create_webhook` | Register a webhook endpoint for invoice/payment events |
 | `list_webhooks` | List configured webhook endpoints |
 | `update_webhook` | Update a webhook's URL, events, or settings |
 | `delete_webhook` | Delete a webhook endpoint |
 | `ping_webhook` | Send a test event to a webhook endpoint |
+
+**Customers**
+
+| Tool | Description |
+| --- | --- |
+| `list_customers` | List customers with pagination and search |
+| `get_customer` | Fetch a customer by ID |
+| `get_customer_stats` | Revenue and invoice stats for a customer |
+| `update_customer` | Update a customer's name/address/phone |
+
+**Products**
+
+| Tool | Description |
+| --- | --- |
+| `create_product` | Create a product for hosted checkout |
+| `get_product` | Fetch a product by ID |
+| `list_products` | List products with pagination and search |
+| `update_product` | Update a product |
+| `delete_product` | Delete a product |
+
+**Wallets**
+
+| Tool | Description |
+| --- | --- |
+| `list_wallets` | List wallet configurations (public config only) |
+| `get_wallet` | Fetch a wallet by ID |
+| `create_wallet` | Add a DIRECT_WALLET (address) or XPUB_WALLET (xpub) |
+| `update_wallet` | Update a wallet's config |
+| `delete_wallet` | Delete a wallet |
 
 ## Security
 
