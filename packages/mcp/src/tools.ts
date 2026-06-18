@@ -27,18 +27,18 @@ const WEBHOOK_EVENTS: [WebhookEventType, ...WebhookEventType[]] = [
   'payment.expired',
 ];
 
-type ToolResult = {
+export type ToolResult = {
   content: { type: 'text'; text: string }[];
   isError?: boolean;
 };
 
-function ok(data: unknown): ToolResult {
+export function ok(data: unknown): ToolResult {
   const text =
     typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   return { content: [{ type: 'text', text }] };
 }
 
-function fail(err: unknown): ToolResult {
+export function fail(err: unknown): ToolResult {
   // Duck-type the SDK's error shape (BilliumApiError carries `status`) so we
   // surface actionable messages without a runtime import of the SDK.
   const status = (err as { status?: number })?.status;

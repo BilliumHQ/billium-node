@@ -112,14 +112,69 @@ const result = await billium.invoices.list({
   search: 'Order',
 });
 
-console.log(result.data);  // Invoice[]
-console.log(result.total); // total count
+console.log(result.data); // Invoice[]
+console.log(result.pagination.total); // total count
+console.log(result.pagination.lastPage); // last page index
 ```
+
+Every `list()` method returns the same `PaginatedResult<T>` envelope —
+`{ data, pagination: { page, limit, total, lastPage } }`.
 
 ### Cancel an invoice
 
 ```typescript
 await billium.invoices.cancel('inv_...');
+```
+
+## Customers
+
+Customers are auto-created from invoices, so there's no `create` — only read
+and update.
+
+```typescript
+const { data, pagination } = await billium.customers.list({ search: 'alice' });
+const customer = await billium.customers.get('cus_...');
+const stats = await billium.customers.stats('cus_...'); // revenue, invoice counts
+await billium.customers.update('cus_...', { name: 'Alice Smith' });
+```
+
+## Products
+
+```typescript
+const product = await billium.products.create({ name: 'T-shirt', price: 19.99 });
+const { data } = await billium.products.list({ page: 1 });
+await billium.products.get('prd_...');
+await billium.products.update('prd_...', { price: 24.99 });
+await billium.products.delete('prd_...');
+```
+
+`price` is a fiat number on input and a decimal **string** on output.
+
+## Wallets
+
+Configure the crypto wallets payments settle to. Only public configuration is
+ever returned — never private keys or seeds.
+
+```typescript
+// DIRECT_WALLET — a single static receiving address
+await billium.wallets.create({
+  cryptocurrency: 'ETH',
+  network: 'ETH',
+  walletType: 'DIRECT_WALLET',
+  address: '0x...',
+});
+
+// XPUB_WALLET — derive a fresh address per invoice from an extended PUBLIC key
+await billium.wallets.create({
+  cryptocurrency: 'BTC',
+  network: 'BTC',
+  walletType: 'XPUB_WALLET',
+  xpub: 'zpub...',
+});
+
+const wallets = await billium.wallets.list(); // Wallet[] (unpaginated)
+await billium.wallets.update('wal_...', { isEnabled: false });
+await billium.wallets.delete('wal_...');
 ```
 
 ## Webhooks

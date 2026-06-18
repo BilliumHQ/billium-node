@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Billium } from '@billium/node';
 
 import { registerTools } from './tools';
+import { registerMerchantTools } from './tools-merchant';
 import { MCP_VERSION } from './version';
 
 /**
@@ -16,6 +17,7 @@ export function createServer(billium: Billium): McpServer {
   });
 
   registerTools(server, billium);
+  registerMerchantTools(server, billium);
 
   return server;
 }
