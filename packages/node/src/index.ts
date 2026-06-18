@@ -28,9 +28,34 @@ export type {
   ListInvoicesParams,
   PaginatedResult,
 } from './invoices';
+export type {
+  Customer,
+  CustomerLocation,
+  CustomerStats,
+  ListCustomersParams,
+  UpdateCustomerParams,
+} from './customer';
+export type {
+  Product,
+  ProductCurrency,
+  CreateProductParams,
+  UpdateProductParams,
+  ListProductsParams,
+} from './product';
+export type {
+  Wallet,
+  WalletType,
+  Cryptocurrency,
+  Network,
+  CreateWalletParams,
+  UpdateWalletParams,
+} from './wallet';
 
 import { WebhooksClient } from './webhooks';
 import { InvoicesClient } from './invoices';
+import { CustomersClient } from './customer';
+import { ProductsClient } from './product';
+import { WalletsClient } from './wallet';
 import { HttpClient } from './http';
 
 const DEFAULT_BASE_URL = 'https://api.billium.to';
@@ -106,6 +131,9 @@ export interface BilliumOptions {
 export class Billium {
   readonly webhooks: WebhooksClient;
   readonly invoices: InvoicesClient;
+  readonly customers: CustomersClient;
+  readonly products: ProductsClient;
+  readonly wallets: WalletsClient;
 
   constructor(options: BilliumOptions = {}) {
     if (options.apiKey && options.merchantId) {
@@ -120,12 +148,16 @@ export class Billium {
       );
       this.webhooks = new WebhooksClient(options.webhookSecret, http, options.merchantId);
       this.invoices = new InvoicesClient(http, options.merchantId);
+      this.customers = new CustomersClient(http, options.merchantId);
+      this.products = new ProductsClient(http, options.merchantId);
+      this.wallets = new WalletsClient(http, options.merchantId);
     } else {
       this.webhooks = new WebhooksClient(options.webhookSecret);
-      this.invoices = new InvoicesClient(
-        unconfiguredHttp(),
-        options.merchantId ?? '',
-      );
+      const merchantId = options.merchantId ?? '';
+      this.invoices = new InvoicesClient(unconfiguredHttp(), merchantId);
+      this.customers = new CustomersClient(unconfiguredHttp(), merchantId);
+      this.products = new ProductsClient(unconfiguredHttp(), merchantId);
+      this.wallets = new WalletsClient(unconfiguredHttp(), merchantId);
     }
   }
 }
@@ -157,8 +189,9 @@ export class Billium {
  */
 function unconfiguredHttp(): HttpClient {
   const message =
-    'billium.invoices and billium.webhooks management methods require ' +
-    'both `apiKey` and `merchantId` to be set in the Billium constructor.';
+    'billium.invoices, billium.customers, billium.products, billium.wallets, ' +
+    'and billium.webhooks management methods require both `apiKey` and ' +
+    '`merchantId` to be set in the Billium constructor.';
 
   return new Proxy({} as HttpClient, {
     get() {
