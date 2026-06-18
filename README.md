@@ -7,6 +7,7 @@ Official client libraries for [Billium](https://billium.to) — non-custodial cr
 | Package | Version | Description |
 |---|---|---|
 | [`@billium/node`](./packages/node) | [![npm](https://img.shields.io/npm/v/@billium/node.svg)](https://www.npmjs.com/package/@billium/node) | Node.js SDK — invoices, webhook signature verification, webhook management |
+| [`@billium/mcp`](./packages/mcp) | [![npm](https://img.shields.io/npm/v/@billium/mcp.svg)](https://www.npmjs.com/package/@billium/mcp) | MCP server — manage invoices and webhooks from Claude, Cursor, and any MCP host |
 
 Additional language SDKs will live as siblings under `packages/` as they ship.
 
@@ -38,11 +39,15 @@ See [`packages/node/README.md`](./packages/node/README.md) for the full Node.js 
 ```
 .
 ├── packages/
-│   └── node/              # @billium/node — TypeScript Node.js SDK
-│       ├── src/           # Source
-│       ├── tests/         # Vitest test suite
-│       ├── README.md      # Public-facing docs (rendered on npmjs.com)
-│       └── CHANGELOG.md   # Per-release notes
+│   ├── node/              # @billium/node — TypeScript Node.js SDK
+│   │   ├── src/           # Source
+│   │   ├── tests/         # Vitest test suite
+│   │   ├── README.md      # Public-facing docs (rendered on npmjs.com)
+│   │   └── CHANGELOG.md   # Per-release notes
+│   └── mcp/               # @billium/mcp — Model Context Protocol server
+│       ├── src/           # Server + tool definitions
+│       ├── tests/         # Vitest in-memory round-trip suite
+│       └── README.md      # Host setup (Claude Code, Cursor, …)
 └── .github/
     ├── workflows/         # CI + release automation
     ├── ISSUE_TEMPLATE/    # Bug + feature request forms

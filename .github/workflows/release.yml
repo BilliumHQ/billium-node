@@ -45,14 +45,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Build before lint/test: @billium/mcp's typecheck imports @billium/node,
+      # whose types live in its built dist/ — linting first fails with TS2307.
+      - name: Build
+        run: npm run build
+
       - name: Lint
         run: npm run lint
 
       - name: Test
         run: npm test
-
-      - name: Build
-        run: npm run build
 
       # Reject the release if the git tag and the package.json version
       # disagree. The most common release mistake is tagging `v1.0.1` while

@@ -40,14 +40,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Build first: @billium/mcp's typecheck (and tests) import @billium/node,
+      # whose type declarations live in its built dist/. Without a prior build
+      # the workspace lint fails with TS2307 "Cannot find module '@billium/node'".
+      - name: Build
+        run: npm run build
+
       - name: Lint (typecheck src and tests)
         run: npm run lint
 
       - name: Test
         run: npm test
-
-      - name: Build
-        run: npm run build
 
       # Catches the silent class of bug where someone bumps package.json
       # but forgets src/version.ts (or vice versa). Run only on one Node
