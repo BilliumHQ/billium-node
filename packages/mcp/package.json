@@ -1,0 +1,64 @@
+{
+  "name": "@billium/mcp",
+  "version": "0.1.0",
+  "description": "Official Billium MCP server — manage crypto invoices and webhooks from Claude, Cursor, and any MCP host.",
+  "keywords": [
+    "billium",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "cursor",
+    "crypto",
+    "payments",
+    "invoice",
+    "webhook",
+    "ai",
+    "agent"
+  ],
+  "license": "MIT",
+  "author": "Billium <hello@billium.to>",
+  "homepage": "https://billium.to",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BilliumHQ/billium-node.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/BilliumHQ/billium-node/issues"
+  },
+  "type": "module",
+  "bin": {
+    "billium-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@billium/node": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0"
+  }
+}
