@@ -113,11 +113,25 @@ export interface Invoice {
   invoiceTimeline: InvoiceTimelineEntry[];
 }
 
+/**
+ * A page of results from a `list()` endpoint.
+ *
+ * The pagination metadata is nested under `pagination` (not flattened onto
+ * the top level) to match the Billium API's response envelope exactly. Read
+ * counts as `result.pagination.total`, `result.pagination.lastPage`, etc.
+ */
 export interface PaginatedResult<T> {
   data: T[];
-  total: number;
-  page: number;
-  limit: number;
+  pagination: {
+    /** Current page (1-based). */
+    page: number;
+    /** Page size that was applied. */
+    limit: number;
+    /** Total number of matching records across all pages. */
+    total: number;
+    /** Index of the last page (`ceil(total / limit)`). */
+    lastPage: number;
+  };
 }
 
 // ─── Input types ─────────────────────────────────────────────────────────────

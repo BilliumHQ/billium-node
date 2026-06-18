@@ -161,9 +161,7 @@ describe('InvoicesClient', () => {
   describe('list()', () => {
     const PAGE_RESPONSE: PaginatedResult<Invoice> = {
       data: [SAMPLE_INVOICE],
-      total: 1,
-      page: 1,
-      limit: 10,
+      pagination: { page: 1, limit: 10, total: 1, lastPage: 1 },
     };
 
     it('GETs the invoices list and returns paginated result', async () => {
@@ -174,7 +172,7 @@ describe('InvoicesClient', () => {
 
       const [url] = fetch.mock.calls[0] as [string];
       expect(url).toContain(`/merchants/merchant/${MERCHANT_ID}/invoices`);
-      expect(result.total).toBe(1);
+      expect(result.pagination.total).toBe(1);
       expect(result.data[0].id).toBe(INVOICE_ID);
     });
 
