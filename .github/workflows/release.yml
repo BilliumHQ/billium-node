@@ -254,6 +254,36 @@ jobs:
           echo "Publishing @billium/mcp@$TAG_VERSION to dist-tag '$NPM_TAG'"
           npm publish --tag "$NPM_TAG"
 
+      # Download the official registry CLI as a static binary into the package
+      # dir (it reads server.json from the working directory).
+      - name: Install mcp-publisher
+        working-directory: packages/mcp
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      # Publish the server metadata to the official MCP Registry so MCP hosts
+      # can discover it via registry search. Auth is GitHub OIDC from this repo:
+      # because the repo lives in the BilliumHQ org, the OIDC token proves the
+      # `io.github.billiumhq` namespace with no token or device-flow login (the
+      # job already grants `id-token: write`). Runs after the npm publish above
+      # because the registry validates that the published npm package carries the
+      # matching `mcpName` — so we retry to ride out npm metadata propagation.
+      - name: Publish to the MCP Registry
+        working-directory: packages/mcp
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/mcp-v}"
+          # Stamp the tag version into server.json so it always matches the
+          # version just published to npm (the committed value is only a default).
+          jq --arg v "$TAG_VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+          ./mcp-publisher login github-oidc
+          n=0
+          until ./mcp-publisher publish; do
+            n=$((n+1))
+            if [ "$n" -ge 5 ]; then echo "::error::MCP Registry publish failed after $n attempts"; exit 1; fi
+            echo "Registry publish attempt $n failed (npm metadata may still be propagating); retrying in 15s..."
+            sleep 15
+          done
+
       # Same literal-prefix extraction as the node job, against the mcp CHANGELOG.
       - name: Extract release notes from CHANGELOG
         id: changelog
