@@ -1,24 +1,44 @@
 name: Release
 
-# Triggered by pushing a tag like `v1.0.0`. The tag MUST match the version in
-# packages/node/package.json — the workflow checks this and refuses to publish
-# on a mismatch (catches the most common release mistake: tagging without
-# bumping the package, or vice versa).
+# Two independently-versioned packages live in this monorepo and each has its
+# own tag namespace, so a tag tells us unambiguously which package to publish:
+#
+#   v<X.Y.Z>      -> @billium/node   (packages/node)   e.g. v1.0.2
+#   mcp-v<X.Y.Z>  -> @billium/mcp    (packages/mcp)    e.g. mcp-v0.1.0
+#
+# The two globs are disjoint (`mcp-v0.1.0` does not start with `v`), so exactly
+# one publish job runs per tag push — the other is skipped by its `if` guard.
+# Each tag MUST match the version in its package's package.json; the job checks
+# this and refuses to publish on a mismatch (catches the most common release
+# mistake: tagging without bumping the package, or vice versa).
+#
+# Prerelease tags (a SemVer pre-release identifier, e.g. v1.1.0-rc.1 or
+# mcp-v0.2.0-beta.1) are published to the `next` npm dist-tag instead of
+# `latest`, so a release candidate never becomes the default `npm install`
+# target. The dist-tag is derived per-publish from the version string.
 on:
   push:
     tags:
       - 'v*.*.*'
+      - 'mcp-v*.*.*'
 
 jobs:
-  publish:
-    name: Publish to npm
+  publish-node:
+    name: Publish @billium/node to npm
+    # Bare `v*` tags only. Without this guard, pushing an `mcp-v*` tag would also
+    # start this job (both globs trigger the same workflow), and the tag-vs-version
+    # check below would fail the run on every MCP release.
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
-      # Required to mint a short-lived OIDC token used for npm provenance.
-      # Without this, `npm publish` falls back to plain auth and the package
-      # does not get the verified-build badge on npmjs.com.
+      # `contents: write` lets the final step create the GitHub Release — the
+      # repo's default workflow token is read-only, which is why earlier tags
+      # published to npm but never produced a GitHub Release. `id-token: write`
+      # mints the short-lived OIDC token for npm Trusted Publishing + provenance;
+      # without it `npm publish` falls back to plain auth and gets no
+      # verified-build badge on npmjs.com.
+      contents: write
       id-token: write
 
     steps:
@@ -38,9 +58,11 @@ jobs:
       # npm Trusted Publishing (tokenless OIDC) requires npm >= 11.5.1. Node
       # 20.x bundles npm 10.x, which has no OIDC token exchange and falls back
       # to anonymous auth — that is why the first release after NPM_TOKEN was
-      # dropped (v1.0.1) failed with a 404 on PUT. Upgrade npm before publish.
+      # dropped (v1.0.1) failed with a 404 on PUT. Pin to the 11.x line (not a
+      # bare `@latest`) so a future npm major can't silently change publish
+      # behaviour mid-release.
       - name: Upgrade npm for Trusted Publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@^11.5.1
 
       - name: Install dependencies
         run: npm ci
@@ -86,34 +108,170 @@ jobs:
         # Provenance attestation is generated automatically from the same
         # OIDC context (visible on the package page as a "Built and signed
         # on GitHub Actions" badge).
+        #
+        # A SemVer prerelease (version containing `-`, e.g. 1.1.0-rc.1) goes to
+        # the `next` dist-tag so it never becomes the default install; stable
+        # versions go to `latest` (identical to a bare `npm publish`).
         working-directory: packages/node
-        run: npm publish
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          case "$TAG_VERSION" in
+            *-*) NPM_TAG=next ;;
+            *)   NPM_TAG=latest ;;
+          esac
+          echo "Publishing @billium/node@$TAG_VERSION to dist-tag '$NPM_TAG'"
+          npm publish --tag "$NPM_TAG"
 
       # Extract just the section for this version out of CHANGELOG.md so the
       # GitHub release notes mirror what's already documented in the repo,
       # without us having to maintain release notes in two places.
       #
-      # Looks for `## [X.Y.Z]` and copies everything until the next `## ` heading.
+      # `## [X.Y.Z]` is matched as a literal prefix (not a regex) so dots and
+      # any trailing date in the heading are handled correctly; extraction stops
+      # at the next `## ` heading OR the first link-reference definition line
+      # (`[x]: url`), so trailing link defs never leak into the notes.
       - name: Extract release notes from CHANGELOG
         id: changelog
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          awk -v ver="$TAG_VERSION" '
-            $0 ~ "^## \\["ver"\\]" { in_section=1; next }
-            in_section && /^## / { exit }
-            in_section { print }
+          awk -v hdr="## [$TAG_VERSION]" '
+            index($0, hdr) == 1 { found=1; next }
+            found && /^## / { exit }
+            found && /^\[[^]]+\]:/ { exit }
+            found { print }
           ' packages/node/CHANGELOG.md > release-notes.md
           if [ ! -s release-notes.md ]; then
             echo "::warning::No CHANGELOG entry found for $TAG_VERSION; release notes will be empty."
           fi
 
+      # tag_name/name default to the pushed tag (github.ref) — `v1.0.x` here.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           body_path: release-notes.md
-          # If the CHANGELOG section is missing, fall back to a default body
-          # rather than failing the whole release — the npm publish has
-          # already succeeded by this point and we don't want a missing
-          # release note to look like a publish failure.
           generate_release_notes: false
-        continue-on-error: true
+
+  publish-mcp:
+    name: Publish @billium/mcp to npm
+    # `mcp-v*` tags only — see the matching guard on publish-node above. The two
+    # `if` conditions partition the tag space so exactly one job ever runs.
+    if: startsWith(github.ref, 'refs/tags/mcp-v')
+    runs-on: ubuntu-latest
+
+    permissions:
+      # See the node job: `contents: write` is for creating the GitHub Release,
+      # `id-token: write` is for tokenless Trusted Publishing + provenance.
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      # See the node job: Trusted Publishing needs npm >= 11.5.1, but Node 20.x
+      # ships npm 10.x. Pin to the 11.x line so a future npm major can't change
+      # publish behaviour mid-release.
+      - name: Upgrade npm for Trusted Publishing
+        run: npm install -g npm@^11.5.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      # @billium/mcp depends on @billium/node and its tsup build/typecheck reads
+      # the latter's built dist/, so build the whole workspace (node then mcp)
+      # before lint/test — same ordering constraint as the node job and CI.
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # Same guard as the node job, against packages/mcp/package.json. The tag
+      # strips the `mcp-v` prefix: `mcp-v0.1.0` -> `0.1.0`.
+      - name: Verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/mcp-v}"
+          PKG_VERSION=$(node -p "require('./packages/mcp/package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag mcp-v$TAG_VERSION does not match packages/mcp/package.json version $PKG_VERSION"
+            echo "Either re-tag, or bump package.json (and src/version.ts) and push a new tag."
+            exit 1
+          fi
+          echo "Tag and package.json agree on $PKG_VERSION"
+
+      # @billium/mcp depends on @billium/node at a published version, but the
+      # build above uses the local workspace symlink — so a broken mcp (one that
+      # references an unpublished @billium/node) would still build and publish
+      # cleanly, then fail for every consumer with ETARGET. Guard against the
+      # "shipped the mcp tag before the node tag" ordering mistake by resolving
+      # the declared range against the public registry before publishing.
+      - name: Verify @billium/node dependency is published
+        working-directory: packages/mcp
+        run: |
+          RANGE=$(node -p "require('./package.json').dependencies['@billium/node']")
+          echo "mcp requires @billium/node@$RANGE"
+          RESOLVED=$(npm view "@billium/node@$RANGE" version 2>/dev/null | tail -1)
+          if [ -z "$RESOLVED" ]; then
+            echo "::error::@billium/node@$RANGE is not published on npm. Publish the matching node tag (v<version>) first, then re-run this MCP release."
+            exit 1
+          fi
+          echo "Resolved @billium/node@$RANGE -> $RESOLVED on the registry"
+
+      - name: Publish to npm
+        # Tokenless Trusted Publishing, identical mechanism to the node job but
+        # scoped to a different package, and prerelease versions (containing `-`)
+        # publish to the `next` dist-tag rather than `latest`.
+        #
+        # FIRST PUBLISH: @billium/mcp has never been published, so there is a
+        # chicken-and-egg. The trusted-publisher settings page
+        #   https://www.npmjs.com/package/@billium/mcp/access
+        # does not exist until the name does. Two ways to bootstrap:
+        #   1. If your npm org supports pre-registering a trusted publisher for a
+        #      not-yet-published package, do that (repo BilliumHQ/billium-node +
+        #      workflow .github/workflows/release.yml) and let this job publish.
+        #   2. Otherwise claim the name with a one-time MANUAL publish from a
+        #      laptop, which must disable provenance (it cannot be generated
+        #      outside CI):  cd packages/mcp && npm publish --no-provenance
+        #      Then add the trusted publisher at the /access page above and let
+        #      this workflow take over for every subsequent release.
+        working-directory: packages/mcp
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/mcp-v}"
+          case "$TAG_VERSION" in
+            *-*) NPM_TAG=next ;;
+            *)   NPM_TAG=latest ;;
+          esac
+          echo "Publishing @billium/mcp@$TAG_VERSION to dist-tag '$NPM_TAG'"
+          npm publish --tag "$NPM_TAG"
+
+      # Same literal-prefix extraction as the node job, against the mcp CHANGELOG.
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/mcp-v}"
+          awk -v hdr="## [$TAG_VERSION]" '
+            index($0, hdr) == 1 { found=1; next }
+            found && /^## / { exit }
+            found && /^\[[^]]+\]:/ { exit }
+            found { print }
+          ' packages/mcp/CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::No CHANGELOG entry found for $TAG_VERSION; release notes will be empty."
+          fi
+
+      # tag_name/name default to the pushed tag (github.ref) — `mcp-v0.1.0` here.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          generate_release_notes: false

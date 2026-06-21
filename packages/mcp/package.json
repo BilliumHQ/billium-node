@@ -28,12 +28,13 @@
   },
   "type": "module",
   "bin": {
-    "billium-mcp": "./dist/index.js"
+    "billium-mcp": "dist/index.js"
   },
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public",

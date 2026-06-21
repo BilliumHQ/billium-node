@@ -67,3 +67,19 @@ jobs:
             exit 1
           fi
           echo "Versions match: $PKG_VERSION"
+
+      # Same drift guard for @billium/mcp. Its entrypoint is an ESM CLI bin, not
+      # a library that re-exports the version, so compare package.json against
+      # the literal in src/version.ts directly rather than the built output.
+      - name: Verify @billium/mcp package.json and src/version.ts agree
+        if: matrix.node-version == '20.x'
+        working-directory: packages/mcp
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          SRC_VERSION=$(node -e "const s=require('fs').readFileSync('src/version.ts','utf8');const m=s.match(/MCP_VERSION\s*=\s*'([^']+)'/);process.stdout.write(m?m[1]:'missing')")
+          if [ "$PKG_VERSION" != "$SRC_VERSION" ]; then
+            echo "::error::Version mismatch — packages/mcp/package.json reports $PKG_VERSION but src/version.ts reports $SRC_VERSION"
+            echo "Bump both or neither."
+            exit 1
+          fi
+          echo "Versions match: $PKG_VERSION"
