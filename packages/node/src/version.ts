@@ -6,4 +6,4 @@
  * not bundle the entire package.json blob (with dev/test config) into the
  * production output.
  */
-export const SDK_VERSION = '1.0.1';
+export const SDK_VERSION = '1.1.0';

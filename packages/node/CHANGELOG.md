@@ -2,6 +2,22 @@
 
 All notable changes to `@billium/node` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0]
+
+### Added
+
+- **Customers client.** `billium.customers.list / get / stats / update`. Customers are created implicitly when an invoice is issued, so there is no `create` or `delete` — the client covers reading and editing existing records. `stats(customerId)` returns aggregate metrics (`CustomerStats`), and `Customer` carries an optional `location` (`CustomerLocation`). New exported types: `Customer`, `CustomerLocation`, `CustomerStats`, `ListCustomersParams`, `UpdateCustomerParams`.
+- **Products client.** `billium.products.create / get / list / update / delete` — full CRUD over catalog products. `update` accepts a partial of the create params (`UpdateProductParams = Partial<CreateProductParams>`). New exported types: `Product`, `ProductCurrency` (`'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY'`), `CreateProductParams`, `UpdateProductParams`, `ListProductsParams`.
+- **Wallets client.** `billium.wallets.list / get / create / update / delete` for managing the destination wallets that receive settlement. `Wallet` distinguishes `DIRECT_WALLET` from `XPUB_WALLET` (`WalletType`) and is typed against the supported `Cryptocurrency` set and `Network` rails (`BTC`, `ETH`, `BNB`, `POL`, `LTC`, `CRO`, `TRX`). New exported types: `Wallet`, `WalletType`, `Cryptocurrency`, `Network`, `CreateWalletParams`, `UpdateWalletParams`.
+
+All three clients require a secret key (`sk_*`). Consistent with the existing public-key safety guard, calling any of their methods with a `pk_*` key throws a `BilliumError` at call time rather than round-tripping a `403`. These additions are backward compatible — no existing method signature, option, or response shape changed, which is why this is a minor release.
+
+### Note
+
+These clients are the SDK surface that [`@billium/mcp`](https://www.npmjs.com/package/@billium/mcp) builds its customer, product, and wallet tools on. `@billium/mcp` depends on `@billium/node@^1.0.1`, so installing this release satisfies that range and those tools resolve to a build that actually contains the methods.
+
+[1.1.0]: https://github.com/BilliumHQ/billium-node/releases/tag/v1.1.0
+
 ## [1.0.1]
 
 ### Changed
