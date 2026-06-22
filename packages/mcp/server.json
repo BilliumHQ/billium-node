@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.billiumhq/billium",
+  "title": "Billium",
+  "description": "Official Billium MCP server — manage crypto invoices and webhooks from Claude, Cursor, and any MCP host.",
+  "websiteUrl": "https://billium.to",
+  "repository": {
+    "url": "https://github.com/BilliumHQ/billium-node",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@billium/mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "BILLIUM_API_KEY",
+          "description": "Secret API key (sk_...), from the dashboard under Settings → Developer → API keys.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "BILLIUM_MERCHANT_ID",
+          "description": "Merchant ID (mer_...).",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "BILLIUM_BASE_URL",
+          "description": "Override the API base URL (testing / staging environments).",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

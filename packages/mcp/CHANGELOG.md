@@ -2,6 +2,16 @@
 
 All notable changes to `@billium/mcp` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1]
+
+### Added
+
+- **Listed on the official [MCP Registry](https://registry.modelcontextprotocol.io)** as `io.github.billiumhq/billium`, so any MCP host can discover the Billium server through registry search. Adds an `mcpName` field to `package.json` and a `server.json` manifest, published automatically from CI on each `mcp-v*` tag via GitHub OIDC.
+
+### Changed
+
+- First release published end-to-end through CI via npm Trusted Publishing (OIDC) — this version carries a provenance attestation (verify with `npm audit signatures @billium/mcp`). 0.1.0 was a manual bootstrap publish (to claim the package name) and therefore has no provenance.
+
 ## [0.1.0]
 
 Initial public release of the Billium MCP server.
@@ -16,4 +26,5 @@ Initial public release of the Billium MCP server.
 - **Automatic idempotency.** `create_invoice` always sends an idempotency key (generated if you don't pass one), so a retried tool call never creates a duplicate invoice.
 - **npm provenance.** Published from GitHub Actions via OIDC Trusted Publishing, so every release carries a verifiable attestation tying the tarball to its source commit. Verify with `npm audit signatures @billium/mcp`.
 
+[0.1.1]: https://github.com/BilliumHQ/billium-node/releases/tag/mcp-v0.1.1
 [0.1.0]: https://github.com/BilliumHQ/billium-node/releases/tag/mcp-v0.1.0

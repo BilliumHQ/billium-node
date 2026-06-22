@@ -83,3 +83,23 @@ jobs:
             exit 1
           fi
           echo "Versions match: $PKG_VERSION"
+
+      # Keep server.json (the MCP Registry manifest) in lockstep with
+      # package.json so a version bump or rename can't silently desync the
+      # registry listing from the published npm package.
+      - name: Verify @billium/mcp server.json matches package.json
+        if: matrix.node-version == '20.x'
+        working-directory: packages/mcp
+        run: |
+          node -e '
+            const pkg = require("./package.json");
+            const srv = require("./server.json");
+            const errs = [];
+            if (srv.name !== pkg.mcpName) errs.push(`name ${srv.name} != mcpName ${pkg.mcpName}`);
+            if (srv.version !== pkg.version) errs.push(`server version ${srv.version} != package version ${pkg.version}`);
+            const p = (srv.packages || [])[0] || {};
+            if (p.identifier !== pkg.name) errs.push(`packages[0].identifier ${p.identifier} != package name ${pkg.name}`);
+            if (p.version !== pkg.version) errs.push(`packages[0].version ${p.version} != package version ${pkg.version}`);
+            if (errs.length) { console.error("::error::server.json out of sync: " + errs.join("; ")); process.exit(1); }
+            console.log("server.json is consistent with package.json:", srv.name, srv.version);
+          '
