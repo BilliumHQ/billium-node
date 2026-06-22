@@ -100,6 +100,13 @@ jobs:
             const p = (srv.packages || [])[0] || {};
             if (p.identifier !== pkg.name) errs.push(`packages[0].identifier ${p.identifier} != package name ${pkg.name}`);
             if (p.version !== pkg.version) errs.push(`packages[0].version ${p.version} != package version ${pkg.version}`);
-            if (errs.length) { console.error("::error::server.json out of sync: " + errs.join("; ")); process.exit(1); }
+            // The MCP Registry rejects descriptions over 100 chars (HTTP 422) —
+            // catch it here, before a release, rather than mid-publish.
+            const len = (s) => [...(s || "")].length;
+            if (len(srv.description) > 100) errs.push(`description too long (${len(srv.description)} > 100)`);
+            for (const ev of (p.environmentVariables || [])) {
+              if (len(ev.description) > 100) errs.push(`env ${ev.name} description too long (${len(ev.description)} > 100)`);
+            }
+            if (errs.length) { console.error("::error::server.json invalid: " + errs.join("; ")); process.exit(1); }
             console.log("server.json is consistent with package.json:", srv.name, srv.version);
           '

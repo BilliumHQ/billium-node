@@ -276,13 +276,22 @@ jobs:
           # version just published to npm (the committed value is only a default).
           jq --arg v "$TAG_VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
           ./mcp-publisher login github-oidc
+          # Retry only TRANSIENT failures (e.g. npm metadata still propagating).
+          # A 4xx / "validation failed" is deterministic (e.g. server.json too
+          # long) — fail fast instead of burning attempts that can't succeed.
           n=0
-          until ./mcp-publisher publish; do
+          until out=$(./mcp-publisher publish 2>&1); do
+            echo "$out"
+            if echo "$out" | grep -qiE "status 4[0-9][0-9]|validation failed"; then
+              echo "::error::MCP Registry rejected server.json (non-retryable). Fix it and cut a new version."
+              exit 1
+            fi
             n=$((n+1))
-            if [ "$n" -ge 5 ]; then echo "::error::MCP Registry publish failed after $n attempts"; exit 1; fi
-            echo "Registry publish attempt $n failed (npm metadata may still be propagating); retrying in 15s..."
+            if [ "$n" -ge 3 ]; then echo "::error::MCP Registry publish failed after $n attempts"; exit 1; fi
+            echo "Transient registry failure; retrying in 15s (attempt $n)..."
             sleep 15
           done
+          echo "$out"
 
       # Same literal-prefix extraction as the node job, against the mcp CHANGELOG.
       - name: Extract release notes from CHANGELOG
