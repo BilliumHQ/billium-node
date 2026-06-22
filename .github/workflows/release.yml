@@ -254,45 +254,6 @@ jobs:
           echo "Publishing @billium/mcp@$TAG_VERSION to dist-tag '$NPM_TAG'"
           npm publish --tag "$NPM_TAG"
 
-      # Download the official registry CLI as a static binary into the package
-      # dir (it reads server.json from the working directory).
-      - name: Install mcp-publisher
-        working-directory: packages/mcp
-        run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
-
-      # Publish the server metadata to the official MCP Registry so MCP hosts
-      # can discover it via registry search. Auth is GitHub OIDC from this repo:
-      # because the repo lives in the BilliumHQ org, the OIDC token proves the
-      # `io.github.billiumhq` namespace with no token or device-flow login (the
-      # job already grants `id-token: write`). Runs after the npm publish above
-      # because the registry validates that the published npm package carries the
-      # matching `mcpName` — so we retry to ride out npm metadata propagation.
-      - name: Publish to the MCP Registry
-        working-directory: packages/mcp
-        run: |
-          TAG_VERSION="${GITHUB_REF#refs/tags/mcp-v}"
-          # Stamp the tag version into server.json so it always matches the
-          # version just published to npm (the committed value is only a default).
-          jq --arg v "$TAG_VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
-          ./mcp-publisher login github-oidc
-          # Retry only TRANSIENT failures (e.g. npm metadata still propagating).
-          # A 4xx / "validation failed" is deterministic (e.g. server.json too
-          # long) — fail fast instead of burning attempts that can't succeed.
-          n=0
-          until out=$(./mcp-publisher publish 2>&1); do
-            echo "$out"
-            if echo "$out" | grep -qiE "status 4[0-9][0-9]|validation failed"; then
-              echo "::error::MCP Registry rejected server.json (non-retryable). Fix it and cut a new version."
-              exit 1
-            fi
-            n=$((n+1))
-            if [ "$n" -ge 3 ]; then echo "::error::MCP Registry publish failed after $n attempts"; exit 1; fi
-            echo "Transient registry failure; retrying in 15s (attempt $n)..."
-            sleep 15
-          done
-          echo "$out"
-
       # Same literal-prefix extraction as the node job, against the mcp CHANGELOG.
       - name: Extract release notes from CHANGELOG
         id: changelog
@@ -314,3 +275,41 @@ jobs:
         with:
           body_path: release-notes.md
           generate_release_notes: false
+
+      # Registry publish runs LAST, after npm + the GitHub Release, so a registry
+      # hiccup (it's in preview) can't skip those — the step still goes red on a
+      # real failure, but npm and the release are already done.
+      - name: Install mcp-publisher
+        working-directory: packages/mcp
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      # Publish the server metadata to the official MCP Registry so MCP hosts can
+      # discover it via registry search. Auth is GitHub OIDC: because the repo
+      # lives in the BilliumHQ org, the OIDC token proves the `io.github.BilliumHQ`
+      # namespace — note the CANONICAL org case, NOT lowercase; the registry 403s
+      # on a case mismatch. No token/device-flow (job grants id-token: write).
+      - name: Publish to the MCP Registry
+        working-directory: packages/mcp
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/mcp-v}"
+          # Stamp the tag version into server.json so it always matches the
+          # version just published to npm (the committed value is only a default).
+          jq --arg v "$TAG_VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+          ./mcp-publisher login github-oidc
+          # Retry only TRANSIENT failures (e.g. npm metadata still propagating).
+          # A 4xx / "validation failed" is deterministic (bad server.json / wrong
+          # namespace) — fail fast instead of burning attempts that can't succeed.
+          n=0
+          until out=$(./mcp-publisher publish 2>&1); do
+            echo "$out"
+            if echo "$out" | grep -qiE "status 4[0-9][0-9]|validation failed"; then
+              echo "::error::MCP Registry rejected server.json (non-retryable). Fix it and cut a new version."
+              exit 1
+            fi
+            n=$((n+1))
+            if [ "$n" -ge 3 ]; then echo "::error::MCP Registry publish failed after $n attempts"; exit 1; fi
+            echo "Transient registry failure; retrying in 15s (attempt $n)..."
+            sleep 15
+          done
+          echo "$out"
