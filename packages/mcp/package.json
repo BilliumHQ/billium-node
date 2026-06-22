@@ -1,6 +1,6 @@
 {
   "name": "@billium/mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "mcpName": "io.github.billiumhq/billium",
   "description": "Official Billium MCP server — manage crypto invoices and webhooks from Claude, Cursor, and any MCP host.",
   "keywords": [

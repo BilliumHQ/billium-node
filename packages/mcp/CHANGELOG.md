@@ -2,6 +2,12 @@
 
 All notable changes to `@billium/mcp` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2]
+
+### Fixed
+
+- **MCP Registry publish.** The `server.json` description exceeded the registry's 100-character limit, so 0.1.1 published to npm but its registry submission was rejected (HTTP 422). Shortened the description; this is the first version listed on the MCP Registry. CI now guards `server.json` field lengths so this can't recur.
+
 ## [0.1.1]
 
 ### Added
@@ -26,5 +32,6 @@ Initial public release of the Billium MCP server.
 - **Automatic idempotency.** `create_invoice` always sends an idempotency key (generated if you don't pass one), so a retried tool call never creates a duplicate invoice.
 - **npm provenance.** Published from GitHub Actions via OIDC Trusted Publishing, so every release carries a verifiable attestation tying the tarball to its source commit. Verify with `npm audit signatures @billium/mcp`.
 
+[0.1.2]: https://github.com/BilliumHQ/billium-node/releases/tag/mcp-v0.1.2
 [0.1.1]: https://github.com/BilliumHQ/billium-node/releases/tag/mcp-v0.1.1
 [0.1.0]: https://github.com/BilliumHQ/billium-node/releases/tag/mcp-v0.1.0
